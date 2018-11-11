@@ -60,10 +60,10 @@ public class Main {
 			for (int i = 0; i < driver.length; i++) {
 				driver[i] = new Driver(i, clients.length);
 			}
-			
+
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			
-			GUI gui = new GUI(edges, driver);
+
+			GUI gui = new GUI(depot, clients, edges, driver);
 
 		} catch (Exception ex) {
 			System.err.println(ex);

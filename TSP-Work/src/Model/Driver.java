@@ -1,11 +1,17 @@
 package Model;
 
+import java.util.ArrayList;
+
+import Graph.Client;
+
 public class Driver {
 
 	private int id;
 	private boolean familiarity[];
 	private int hiringDay;
 	private int skill;
+	public ArrayList<Client> clients = new ArrayList<>();// clients this driver should serve
+
 	// private boolean newInWork; //not for now! Skills ??????????
 
 	public Driver(int id, int length) {
