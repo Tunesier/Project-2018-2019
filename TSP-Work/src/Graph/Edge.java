@@ -2,36 +2,56 @@ package Graph;
 
 import java.awt.Color;
 
+import Model.TravelTimeXLS;
+
 /**
  *
  * @author Muaaz
  */
 public class Edge {
-	private Node start;
-	private Node end;
-//	private String id;
+	private final Client start;
+	private final Client end;
+	private final int ID;
 	private double weight;
 	private Color edgeColor;
 
-	public Edge(Node start, Node end) {
+	private int isAssignedToDriver = -1;
+	private boolean isUsed = false;
+
+	public boolean isUsed() {
+		return isUsed;
+	}
+
+	public void setUsed(boolean isUsed) {
+		this.isUsed = isUsed;
+	}
+
+	public Edge(Client start, Client end, int ID) {
+
 		this.start = start;
 		this.end = end;
-//		this.id = start.getId() + "*" + end.getId(); // example : 1*2
+		this.ID = ID;
 		this.weight = Math.sqrt(Math.pow(start.getPos().getX() - end.getPos().getX(), 2)
 				+ Math.pow(start.getPos().getY() - end.getPos().getY(), 2));
 		this.edgeColor = new Color(0, 153, 153);
 	}
 
-	public Node getStart() {
+	public Client getStart() {
 		return this.start;
 	}
 
-	public Node getEnd() {
+	public Client getEnd() {
 		return this.end;
 	}
-
 	public double getWeight() {
 		return this.weight;
+	}
+
+	public double getWeight(int i) {
+		if(i == 1) {
+			return TravelTimeXLS.TWENTY_MINUTES;
+		}
+		return TravelTimeXLS.THIRTY_MINUTES;
 	}
 
 	public Color getEdgeColor() {
@@ -42,7 +62,28 @@ public class Edge {
 		this.edgeColor = color;
 	}
 
-//	public String getId() {
-//		return this.id;
-//	}
+	public int getId() {
+		return this.ID;
+	}
+
+	public Edge findEdge(Client start, Client end) {
+		if (this.start.equals(start) && this.end.equals(end)) {
+			return this;
+		}
+		return null;
+	}
+
+	public boolean isAssignedToDriver(int driverNumber) {
+		return isAssignedToDriver == driverNumber;
+	}
+
+	public void setAssignedToDriver(int driverNumber) {
+		this.isAssignedToDriver = driverNumber;
+	}
+
+	@Override
+	public String toString() {
+		return "EdgeID: " + this.getId() + " ### Weight: " + this.getWeight(0) + " ### StartNode: " + this.getStart()
+				+ " ### EndNode: " + this.getEnd();
+	}
 }

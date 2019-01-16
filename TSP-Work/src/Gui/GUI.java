@@ -10,15 +10,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.WindowConstants;
 
 import Graph.Client;
-import Graph.Depot;
 import Graph.Edge;
 import Model.Driver;
-import Model.Position;
+import Model.Solver;
 
 import javax.swing.JButton;
 
@@ -26,6 +24,7 @@ import javax.swing.JButton;
  *
  * @author Muaaz
  */
+
 public class GUI extends JFrame {
 	/**
 	 * Creates new MainGUI
@@ -34,33 +33,28 @@ public class GUI extends JFrame {
 	 */
 	static final int GUI_WIDTH = 1920;
 	static final int GUI_HEIGHT = 1080;
-	static final Color[] colors = { Color.GREEN, Color.PINK, Color.ORANGE, Color.LIGHT_GRAY };
-	static int day = 1;
+	public static final Color[] colors = { Color.GREEN, Color.PINK, Color.ORANGE, Color.LIGHT_GRAY };
+	public static int day = 1;
 
-	static Depot depot;
-	static Client[] clients;
-	static Edge[] edges;
-	static Driver[] driver;
+	public static int MinOverAllWeight = 0;
+
+	public static Client[] clients;
+	public static Edge[] edges;
+	public static Driver[] drivers;
+	public static Solver solver = new Solver();
 
 	Panel panel;
 	// JLabel l1;
 
-	public GUI(Depot depot, Client[] clients, Edge[] edges, Driver[] driver) {
-		this.depot = depot;
+	public GUI(Client[] clients, Edge[] edges, Driver[] drivers) {
+
 		this.clients = clients;
 		this.edges = edges;
-		this.driver = driver;
+		this.drivers = drivers;
 		initGui();
-		panel = new Panel();
-		// this let us freely add JButtons in the area
-		panel.setLayout(null);
-		// Test JButton added !
-		addButtons();
-		// l1 = new JLabel("Day: " + day);
-		// l1.setBounds(10, 100, 100, 40);
-		// panel.add(l1);
+		initPanel();
+		initButtons();
 		this.setContentPane(panel);
-
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setVisible(true);
 	}
@@ -71,7 +65,13 @@ public class GUI extends JFrame {
 		setBackground(new Color(51, 0, 102));
 	}
 
-	private void addButtons() {
+	private void initPanel() {
+		panel = new Panel();
+		// this let us freely add JButtons in the area
+		panel.setLayout(null);
+	}
+
+	private void initButtons() {
 		// Solve Button
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		JButton solveButton = new JButton("Solve");
@@ -84,9 +84,12 @@ public class GUI extends JFrame {
 
 		solveButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				panel.solveClicked();
+				solver.solveClicked();
+				repaint();
+
 			}
 		});
+		// Next Day Button
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		JButton nextDayButton = new JButton("Next Day");
 		nextDayButton.setBounds(0, 40, 100, 40);
@@ -98,15 +101,45 @@ public class GUI extends JFrame {
 
 		nextDayButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				panel.nextDayClicked();
+				solver.nextDayClicked();
+				repaint();
+			}
+		});
+		// arrange Drivers to distination button
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		JButton arrangeDrivers = new JButton("Arrange Drivers");
+		arrangeDrivers.setBounds(0, 80, 100, 40);
+		arrangeDrivers.setFocusPainted(false);
+		arrangeDrivers.setBackground(new Color(59, 89, 182));
+		arrangeDrivers.setForeground(new Color(255, 255, 255));
+		arrangeDrivers.setFont(new Font("Tahoma", Font.BOLD, 12));
+		panel.add(arrangeDrivers);
+
+		arrangeDrivers.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				solver.arrangeDriversToDistinationClicked();
+				repaint();
 			}
 		});
 	}
 
-	private static class Panel extends JPanel {
+	private class thread extends Thread {
+		@Override
+		public void run() {
+
+		}
+	}
+
+	private static class Panel extends JPanel implements ActionListener {
+		// Timer loopTimer;
 
 		static final int STROKE_SMALL_SIZE = 4;
 		static final int STROKE_BIG_SIZE = 16;
+
+		public Panel() {
+			// loopTimer = new Timer(10, this);
+			// loopTimer.start();
+		}
 
 		@Override
 		public void paint(Graphics g) {
@@ -115,15 +148,29 @@ public class GUI extends JFrame {
 			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g2d.setColor(Color.WHITE);
 			g2d.setFont(new Font("TimesRoman", Font.PLAIN, 15));
-			g2d.drawString("Day: " + day, 10, 100);
+			g2d.drawString("Day: " + day, 10, 140);
 			for (int i = 0; i < edges.length; i++) {
 				drawEdge(g2d, i);
-				drawVertex(g2d, i);
+				drawVertices(g2d, i);
 			}
 
 		}
 
-		private void drawVertex(Graphics2D g2d, int index) {
+		private void drawEdge(Graphics2D g2d, int index) {
+			g2d.setStroke(new BasicStroke(STROKE_SMALL_SIZE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL));
+			g2d.setColor(edges[index].getEdgeColor());
+			g2d.drawLine(edges[index].getStart().getPos().getX(), edges[index].getStart().getPos().getY(),
+					edges[index].getEnd().getPos().getX(), edges[index].getEnd().getPos().getY());
+			g2d.drawString(" " + edges[index].getId(),
+					(Math.abs(edges[index].getStart().getPos().getX() - edges[index].getEnd().getPos().getX()) / 2
+							+ Math.min(edges[index].getStart().getPos().getX(), edges[index].getEnd().getPos().getX())),
+					(Math.abs(edges[index].getStart().getPos().getY() - edges[index].getEnd().getPos().getY()) / 2
+							+ Math.min(edges[index].getStart().getPos().getY(),
+									edges[index].getEnd().getPos().getY())));
+
+		}
+
+		private void drawVertices(Graphics2D g2d, int index) {
 			g2d.setStroke(new BasicStroke(STROKE_BIG_SIZE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL));
 			g2d.setColor(edges[index].getStart().getColor());
 			g2d.drawLine(edges[index].getStart().getPos().getX(), edges[index].getStart().getPos().getY(),
@@ -142,77 +189,8 @@ public class GUI extends JFrame {
 
 		}
 
-		private void drawEdge(Graphics2D g2d, int index) {
-			g2d.setStroke(new BasicStroke(STROKE_SMALL_SIZE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL));
-			g2d.setColor(edges[index].getEdgeColor());
-			g2d.drawLine(edges[index].getStart().getPos().getX(), edges[index].getStart().getPos().getY(),
-					edges[index].getEnd().getPos().getX(), edges[index].getEnd().getPos().getY());
-		}
-
-		void solveClicked() {
-			int degreesProRadius = calcRadiusForEveryDriver();
-			setTheRightDriverForEachClient(degreesProRadius);
-			int minWeightIndex = 0;
-			for (int i = edges.length; i >= 0; i--) {
-				minWeightIndex = 0;
-				for (int j = i - 1; j >= 0; j--) {
-					// if(edges[i].getStart().edges.get(j))
-					if (edges[minWeightIndex].getWeight() > edges[j].getWeight()) {
-						minWeightIndex = j;
-					}
-				}
-				edges[minWeightIndex].setEdgeColor(new Color(255, 255, 102));
-			}
-			repaint();
-		}
-
-		// TODO not finished yet
-		private void nextDayClicked() {
-			day= day+1;
-			for (int i = 0; i < driver.length; i++) {
-				driver[i].setSkill(driver[i].getSkill() + 1);
-			}
-			reset();
-		}
-
-		private void reset() {
-			for (int i = 0; i < edges.length; i++) {
-				edges[i].setEdgeColor(new Color(0, 153, 153));
-			}
-			for (int i = 0; i < clients.length; i++) {
-				clients[i].setColor(new Color(255, 255, 255));
-			}
-			repaint();
-		}
-
-		private int calcRadiusForEveryDriver() {
-			return 360 / driver.length;
-		}
-
-		// to calculate angle between two points in degrees ..
-		// "now it works after testing it and multiplying it with -1 "
-		private double calcAngleBetweenTwoPoints(Position p1, Position p2) {
-			double temp = -1 * (Math.atan2(p2.getY() - p1.getY(), p2.getX() - p1.getX()) * 180 / Math.PI);
-			if (temp < 0.0) {
-				temp *= -1;
-				if (temp <= 90.0) {
-					temp += 270;
-				} else {
-					// this can be done in one step but
-					// i left it so to make it clearer for the others
-					temp -= 90;
-					temp += 180;
-				}
-			}
-			return temp;
-		}
-
-		private void setTheRightDriverForEachClient(int degreesProRadius) {
-			for (int i = 0; i < clients.length; i++) {
-				double temp = calcAngleBetweenTwoPoints(depot.getPos(), clients[i].getPos());
-				clients[i].setColor(colors[(int) temp / degreesProRadius]);
-				driver[(int) temp / degreesProRadius].clients.add(clients[i]);
-			}
+		@Override
+		public void actionPerformed(ActionEvent e) {
 			repaint();
 		}
 
